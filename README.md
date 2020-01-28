@@ -37,3 +37,5 @@ Check documents with error in the table oc_fulltextsearch_indexes resides in Nex
 - -P, --port      = The port of nextcloud database
 - -D, --perf-data = Enable output for monitoring performance data (Nagios/Icinga)
 - -A, --action    = The action the script should execute
+- -w, --warning   = Warning threshold
+- -c, --critical  = Critical threshold
