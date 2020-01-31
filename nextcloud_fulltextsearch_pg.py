@@ -42,7 +42,10 @@ def numeric_type(param):
 
 def check_levels(param, warning, critical, message, ok=[]):
     if (numeric_type(critical) and numeric_type(warning)):
-        if param >= critical:
+        if warning >= critical:
+            print("WARNING - The warning threshold is greater than critical threshold")
+            sys.exit(1)
+        elif param >= critical:
             print("CRITICAL - " + message)
             sys.exit(2)
         elif param >= warning:
@@ -80,8 +83,8 @@ def main(argv=None):
     p.add_option('-A', '--action', type='choice', dest='action', default='connect', help='The action the script should execute',
                     choices=['fts_queue', 'fts_errors', 'connect']
                 )
-    p.add_option('-w', '--warning', type='string', dest='warning', default=None, help='Warning threshold')
-    p.add_option('-c', '--critical', type='string', dest='critical', default=None, help='Critical threshold')
+    p.add_option('-w', '--warning', action='store', dest='warning', default=None, help='Warning threshold')
+    p.add_option('-c', '--critical', action='store', dest='critical', default=None, help='Critical threshold')
 
     options, arguments = p.parse_args()
     host = options.host
@@ -91,11 +94,9 @@ def main(argv=None):
     port = options.port
     perf_data = options.perf_data
     action = options.action
+    warning = int(options.warning or 0)
+    critical = int(options.critical or 0)
 
-    warning = options.warning
-    critical = options.critical
-
-    
     # connect to the databse, create cursor and determine connection time
     start = time.time()
     con = psycopg2.connect(database=database, user=user, password=password, host=host, port=port)
@@ -130,13 +131,13 @@ def check_fts_queue(cur, warning, critical, perf_data):
 
     for row in rows:
       fts_queue += 1
-    
+
     message = "Documents in queue: %d" % fts_queue
     message += performance_data(perf_data, [("%d" % fts_queue, "documents_pending", warning, critical)])
     cur.close()
     return check_levels(fts_queue, warning, critical, message)
-     
-       
+
+
 def check_fts_error(cur, warning, critical, perf_data):
     warning = warning or 1
     critical = critical or 2
@@ -152,9 +153,9 @@ def check_fts_error(cur, warning, critical, perf_data):
     message += performance_data(perf_data, [("%d" % fts_errors, "index_erros", warning, critical)])
     cur.close()
     return check_levels(fts_errors, warning, critical, message)
-    
- 
+
+
 
     con.close()
-if __name__ == "__main__": 
+if __name__ == "__main__":
     main(sys.argv)
