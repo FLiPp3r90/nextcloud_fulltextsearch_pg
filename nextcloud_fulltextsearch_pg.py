@@ -1,8 +1,18 @@
 #!/usr/bin/env python
 
 #
-# My comments (placeholder)
+# A script that check fulltextsearch queue in nextcloud
+# This works only for Postgres Backend
 #
+#
+# Main Author
+#   - Filip Krahl <filip.krahl@t-systems.com>
+#
+# USAGE
+#
+# See README.md
+#
+
 
 from optparse import OptionParser
 import sys
@@ -153,7 +163,6 @@ def check_fts_error(cur, warning, critical, perf_data):
     message += performance_data(perf_data, [("%d" % fts_errors, "index_erros", warning, critical)])
     cur.close()
     return check_levels(fts_errors, warning, critical, message)
-
 
 
     con.close()
