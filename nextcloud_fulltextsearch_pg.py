@@ -49,7 +49,6 @@ def performance_data(perf_data, params):
 def numeric_type(param):
     return param is None or isinstance(param, numbers.Real)
 
-
 def check_levels(param, warning, critical, message, ok=[]):
     if (numeric_type(critical) and numeric_type(warning)):
         if warning >= critical:
@@ -82,10 +81,11 @@ def check_levels(param, warning, critical, message, ok=[]):
         return 2
 
 def main(argv=None):
-
+    
     p = OptionParser()
     p.add_option('-H', '--host', action='store', type='string', dest='host', default='127.0.0.1', help='The hostname of postgres database')
     p.add_option('-d', '--database', action='store', type='string', dest='database', default='postgres', help='The nextcloud database the fulltextsearch table is inside')
+    p.add_option('-t', '--tableprefix', action='store', type='string', dest='tableprefix', default='oc', help='Tableprefix for the nextcloud database')
     p.add_option('-u', '--user', action='store', type='string', dest='user', default='nextcloud', help='The user which has access to nextcloud database')
     p.add_option('-p', '--password', action='store', type='string', dest='password', default='', help='The password of nextcloud db user')
     p.add_option('-P', '--port', action='store', type='string', dest='port', default='5432', help='The port of nextcloud database')
@@ -99,6 +99,7 @@ def main(argv=None):
     options, arguments = p.parse_args()
     host = options.host
     database = options.database
+    tableprefix = options.tableprefix
     user = options.user
     password = options.password
     port = options.port
@@ -116,12 +117,11 @@ def main(argv=None):
 
 
     if action == "fts_queue":
-        return check_fts_queue(cur, warning, critical, perf_data)
+        return check_fts_queue(cur, warning, critical, perf_data, tableprefix)
     elif action == "fts_errors":
-        return check_fts_error(cur, warning, critical, perf_data)
+        return check_fts_error(cur, warning, critical, perf_data, tableprefix)
     else:
         return check_connect(host, port, database, user, password, warning, critical, conn_time, perf_data)
-
 
 def check_connect(host, port, database, user, password, warning, critical, conn_time, perf_data):
     warning = warning or 3
@@ -131,10 +131,11 @@ def check_connect(host, port, database, user, password, warning, critical, conn_
     return check_levels(conn_time, warning, critical, message)
 
 
-def check_fts_queue(cur, warning, critical, perf_data):
+def check_fts_queue(cur, warning, critical, perf_data, tableprefix):
     warning = warning or 10
     critical = critical or 50
-    cur.execute("""select  * from oc_fulltextsearch_indexes where status != 1;""")
+    select = "select  * from {}_fulltextsearch_indexes where status != 1;".format(tableprefix)
+    cur.execute(select)
     rows = cur.fetchall()
 
     fts_queue = 0
@@ -148,10 +149,11 @@ def check_fts_queue(cur, warning, critical, perf_data):
     return check_levels(fts_queue, warning, critical, message)
 
 
-def check_fts_error(cur, warning, critical, perf_data):
+def check_fts_error(cur, warning, critical, perf_data, tableprefix):
     warning = warning or 1
     critical = critical or 2
-    cur.execute("""select  * from oc_fulltextsearch_indexes where err != 0;""")
+    select = "select  * from {}_fulltextsearch_indexes where err != 0;".format(tableprefix)
+    cur.execute(select)
     rows = cur.fetchall()
 
     fts_errors = 0
@@ -163,7 +165,6 @@ def check_fts_error(cur, warning, critical, perf_data):
     message += performance_data(perf_data, [("%d" % fts_errors, "index_erros", warning, critical)])
     cur.close()
     return check_levels(fts_errors, warning, critical, message)
-
 
     con.close()
 if __name__ == "__main__":
